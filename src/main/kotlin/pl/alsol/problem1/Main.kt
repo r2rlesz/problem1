@@ -1,81 +1,49 @@
 package pl.alsol.problem1
 
 import java.util.*
-import kotlin.collections.ArrayList
+import kotlin.math.max
 import kotlin.system.measureTimeMillis
 
-fun main() {
-    println("Number of logical cores: ${Runtime.getRuntime().availableProcessors()}")
+/**
+ * [houses] should not contain negative numbers
+ * Returns maximum possible sum of not adjacent elements
+ */
+fun rob(houses: List<Int>): Long {
+    // In case where implementation of List get function have complexity of O(n) where n is number of elements in list
+    // like in LinkedList, we should iterate over elements
+    val iterator = houses.iterator()
+    if (!iterator.hasNext())
+        return 0L
 
-    print("Preparing data...")
-    val smallStreet = LinkedList(listOf(1,2,3,1))
-    val largeStreet = ArrayList<Int>()
-    generateSequence(0) { it + 1 }.take(40_300_000).toCollection(largeStreet)
+    var prev = iterator.next().toLong()
+    if (!iterator.hasNext())
+        return prev
 
-    val smallStreetRun = arrayListOf(
-        Run(RobTool::robHouses, "RobTool::robHouses"),
-        Run(RobTool::robHousesAlt, "RobTool::robHousesAlt"),
-        Run(RobTool::robHousesAlt2, "RobTool::robHousesAlt2"),
-        Run(RobTool::robHousesAlt3, "RobTool::robHousesAlt3"),
-    )
-
-    val largeStreetNumberOfRuns = 3
-    val largeStreetRun = arrayListOf<Run<ArrayList<Int>>>(
-        Run(RobTool::robHouses, "RobTool::robHouses"),
-        Run(RobTool::robHousesAlt, "RobTool::robHousesAlt"),
-        Run(RobTool::robHousesAlt2, "RobTool::robHousesAlt2"),
-        Run(RobTool::robHousesAlt3, "RobTool::robHousesAlt3"),
-        Run(RobToolForArrayList::robHouses, "RobToolForArrayList::robHouses"),
-        Run(RobToolForArrayList::robHousesAlt, "RobToolForArrayList::robHousesAlt"),
-        Run(RobToolForArrayList::robHousesWithCompetitor, "RobToolForArrayList::robHousesWithCompetitor"),
-        Run(RobToolForArrayList::robHousesWithCompetitorAlt, "RobToolForArrayList::robHousesWithCompetitorAlt"),
-        Run(RobToolForArrayList::robHousesWithCompetitorAlt2, "RobToolForArrayList::robHousesWithCompetitorAlt2"),
-        Run(RobToolForArrayList::robHousesWithCompetitorAndAccomplices, "RobToolForArrayList::robHousesWithCompetitorAndAccomplices"),
-        Run(RobToolForArrayList::robHousesWithCompetitorAndAccomplicesAlt, "RobToolForArrayList::robHousesWithCompetitorAndAccomplicesAlt"),
-    )
-
-    System.gc()
-    println("done.")
-
-    println("\n-- Performing computations for small list (1,2,3,1) --")
-    smallStreetRun.forEach { run ->
-        run.performRobFunctionAndMeasure(smallStreet)
+    var cur = max(prev, iterator.next().toLong())
+    while (iterator.hasNext()) {
+        val tmp = cur
+        cur = max(iterator.next() + prev, cur)
+        prev = tmp
     }
-
-    println("--------------------------------------------------------------------------")
-
-    println("-- Performing computations for large list (${largeStreet.size} elements) --")
-    for (runNo in 1..largeStreetNumberOfRuns) {
-        println("\n---------- Run number $runNo --------------")
-        largeStreetRun.forEach { run ->
-            run.performRobFunctionAndMeasure(largeStreet)
-        }
-    }
-
-    println("\n---------- Average compute times -----------")
-    largeStreetRun.forEach { run ->
-        println("${run.robFunctionName}(): ${(run.accumulatedTime ?: 0) / largeStreetNumberOfRuns} ms")
-    }
+    return cur
 }
 
-data class Run<T> (
-    val robFunction: (T) -> Long,
-    val robFunctionName: String,
-) {
-    var lastMeasuredTime: Long? = null
-        private set
-    var accumulatedTime: Long? = null
-        private set
-    var lastResult: Long? = null
-        private set
+fun main() {
+    print("Preparing data...")
+    val smallStreet = LinkedList(listOf(1,2,3,1))
+    val mediumStreet = listOf(100,20,100,20,100,1000)
+    val largeStreet = LinkedList<Int>()
+    generateSequence(0) { it + 1 }.take(1_333_333).toCollection(largeStreet)
+    println("done.")
 
-    fun performRobFunctionAndMeasure(houses: T) {
-        println("Performing ${robFunctionName}()...")
-        lastMeasuredTime = measureTimeMillis {
-            lastResult = robFunction(houses)
+    for (street in listOf(smallStreet, mediumStreet, largeStreet)) {
+        val streetDescription = if (street.size <= 20) street.joinToString(", ") else "with ${street.size} houses"
+        println("\nRobbing street ($streetDescription)...")
+        val streetCash: Long
+        val time = measureTimeMillis {
+            streetCash = rob(street)
         }
-        accumulatedTime = (accumulatedTime ?: 0) + lastMeasuredTime!!
-        println("result: $lastResult")
-        println("Compute time: $lastMeasuredTime ms\n")
+        println("Robbed money: $streetCash")
+        println("Performed in $time ms")
     }
 }
